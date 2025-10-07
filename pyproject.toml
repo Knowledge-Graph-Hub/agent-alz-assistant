@@ -1,0 +1,38 @@
+[project]
+name = "agent_alz_assistant"
+version = "0.1.0"
+description = "Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis"
+authors = [
+    {name = "Justin Reese", email = "justinreese@lbl.gov"}
+]
+license = "BSD-3-Clause"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "nicegui>=2.0.0",
+    "python-dotenv>=1.0.0",
+"artl-mcp>=0.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"

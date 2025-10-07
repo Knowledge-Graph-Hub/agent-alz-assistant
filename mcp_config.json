@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "artl": {
+      "command": "uvx",
+      "args": ["artl-mcp"]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    }
+  }
+}
