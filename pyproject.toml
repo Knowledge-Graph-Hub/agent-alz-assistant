@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 dependencies = [
     "nicegui>=2.0.0",
     "python-dotenv>=1.0.0",
-"artl-mcp>=0.2.0",
+    "paper-qa>=5.0.0",
 ]
 
 [build-system]

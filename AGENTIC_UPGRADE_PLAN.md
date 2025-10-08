@@ -668,3 +668,49 @@ echo "What is 2+2?" | claude --print
 - Claude Code CLI: https://docs.anthropic.com/en/docs/claude-code
 - MCP specification: https://modelcontextprotocol.io
 - Copier docs: https://copier.readthedocs.io
+
+### GitHub Actions Integration (Future Goal)
+
+**Goal:** Enable ephemeral runs in GitHub Actions for one-off queries without the web interface.
+
+The planned approach would:
+- Clone the repo on-the-fly
+- Install dependencies with `uv`
+- Use Claude CLI directly (bypassing the web UI)
+- Run a single query and exit
+
+**Target workflow pattern:**
+```yaml
+name: Query Agent
+on: 
+  workflow_dispatch:
+    inputs:
+      question:
+        description: 'Question to ask'
+        required: true
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: astral-sh/setup-uv@v1
+      
+      - name: Ask question
+        env:
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.CBORG_API_KEY }}
+          ANTHROPIC_BASE_URL: https://api.cborg.lbl.gov
+          ANTHROPIC_MODEL: anthropic/claude-sonnet
+        run: |
+          uv sync
+          echo "${{ inputs.question }}" | uv run claude --print --dangerously-skip-permissions --mcp-config mcp_config.json
+```
+
+**Use cases:**
+- Automated research queries in CI/CD pipelines
+- Batch processing questions from issues
+- Scheduled literature reviews
+- Integration with other GitHub workflows
+
+**Status:** Not yet implemented. Requires testing and potentially adjusting the agent configuration for headless operation.

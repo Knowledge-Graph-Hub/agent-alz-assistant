@@ -103,7 +103,7 @@ async def index():
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title="agent-alz-assistant",
-        port=8080,
+        port=8082,
         reload=False,
         show=True,
     )
