@@ -99,7 +99,35 @@ def main():
     
     try:
         result = asyncio.run(query_paperqa(query, corpus_id))
-        print(result.session.answer)
+        
+        # Extract citations from contexts
+        citations = []
+        seen_docs = set()
+        for ctx in result.session.contexts:
+            if hasattr(ctx.text, 'doc'):
+                doc = ctx.text.doc
+                # Avoid duplicates
+                if doc.docname not in seen_docs:
+                    seen_docs.add(doc.docname)
+                    citation_info = {
+                        'key': doc.docname,
+                        'doi': doc.doi if hasattr(doc, 'doi') and doc.doi else None,
+                        'citation': doc.citation if hasattr(doc, 'citation') else None,
+                        'score': ctx.score
+                    }
+                    # Try to extract PMC ID from filename if available
+                    if doc.docname.startswith('PMC'):
+                        citation_info['pmcid'] = doc.docname.split('_')[0]
+                    citations.append(citation_info)
+        
+        # Output JSON with answer and citations
+        import json
+        output = {
+            'answer': result.session.answer,
+            'citations': citations
+        }
+        print(json.dumps(output, indent=2))
+        
     except Exception as e:
         print(f"Error querying PaperQA: {e}", file=sys.stderr)
         sys.exit(1)
