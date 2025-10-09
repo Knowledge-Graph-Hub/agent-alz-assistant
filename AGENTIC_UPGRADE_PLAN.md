@@ -807,3 +807,10 @@ OPENAI_API_KEY=your-key-here
 4. **Optional: Web search integration** - For recent 2024/2025 papers
    - Only after ARTL is working
    - Lower priority than citation tracking
+
+5. **Conversation persistence** - Save and restore chat history
+   - Generate unique keys for conversations (UUIDs)
+   - Store conversation history (requires storage backend: SQLite, Redis, or file-based)
+   - Allow users to resume conversations via URL or session ID
+   - Implement conversation list/history UI
+   - Consider privacy/data retention policies
