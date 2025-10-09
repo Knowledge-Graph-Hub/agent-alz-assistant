@@ -25,21 +25,43 @@ python -m agent_alz_assistant.tools.paperqa.query "your question here" [corpus_i
 - `2` or `medium` - 1,065 papers (default)
 - `3` or `large` - 3,000 papers
 
-**Examples:**
-```bash
-# Use default medium corpus
-python -m agent_alz_assistant.tools.paperqa.query "What is tau protein and how does it relate to Alzheimer's?"
+**Output format:**
+The tool returns JSON with two fields:
+```json
+{
+  "answer": "The synthesized answer with inline citations",
+  "citations": [
+    {
+      "key": "author2023title",
+      "doi": "10.1234/example",
+      "citation": "Full citation with authors, title, journal, year, URL",
+      "score": 10,
+      "pmcid": "PMC1234567"
+    }
+  ]
+}
+```
 
-# Use large corpus for comprehensive search
-python -m agent_alz_assistant.tools.paperqa.query "What are blood biomarkers for early AD detection?" 3
+**How to use the output:**
+1. Parse the JSON response
+2. Present the `answer` field to the user with proper markdown formatting
+3. Add a "## References" section at the end listing all citations with:
+   - Authors and year
+   - DOI link (if available)
+   - PMC ID link (if available, format: `https://www.ncbi.nlm.nih.gov/pmc/articles/PMCID/`)
 
-# Use small corpus for quick lookups
-python -m agent_alz_assistant.tools.paperqa.query "What is APOE4?" small
+**Example response format:**
+```markdown
+[Answer text here with inline citations...]
+
+## References
+
+1. Author et al. (2019) - [DOI](https://doi.org/10.1016/...) | [PMC123456](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC123456/)
+2. Another Author et al. (2020) - [DOI](https://doi.org/10.1371/...)
 ```
 
 **Important:**
-- The tool returns an answer with citations (PMC IDs or PMIDs)
-- Always cite the sources in your response to the user
+- Always parse and display the citations prominently
 - If the corpus doesn't have enough info, use artl-mcp to fetch specific papers
 - For very recent research (2024-2025), you may need to supplement with web search
 
