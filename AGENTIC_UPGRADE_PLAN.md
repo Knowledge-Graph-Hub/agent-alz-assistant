@@ -714,3 +714,96 @@ jobs:
 - Integration with other GitHub workflows
 
 **Status:** Not yet implemented. Requires testing and potentially adjusting the agent configuration for headless operation.
+
+---
+
+## Progress Notes - October 8, 2025
+
+### PaperQA Integration (Completed)
+
+**What was implemented:**
+- Created `agent_alz_assistant/tools/paperqa/query.py` - standalone tool to query curated papers
+- Vendored PaperQA logic (removed curategpt dependency, use paper-qa directly)
+- Uses absolute paths for corpora and indexes to prevent unwanted rebuilding
+- Supports 3 corpora: small (360), medium (1k), large (3k)
+- Added sample questions UI for user onboarding
+- Agent runs from project root so CLAUDE.md is loaded
+- Markdown rendering for formatted answers
+
+**Testing:**
+- ✅ Successfully queries Bateman_LLM_360 (360 papers)
+- ✅ Successfully queries alz_papers_3k_text (3k papers)
+- ✅ Indexes match server (same hash for large corpus)
+- ✅ Returns answers with citations in seconds
+
+**Environment variables required:**
+```bash
+PQA_HOME1=/absolute/path/to/Bateman_LLM_360
+PQA_INDEX1=/absolute/path/to/.pqa/indexes/pqa_index_xxxxx
+PQA_HOME3=/absolute/path/to/alz_papers_3k_text
+PQA_INDEX3=/absolute/path/to/.pqa/indexes/pqa_index_9ff473ec92621a85e2c0ff86aa96e5d9
+OPENAI_API_KEY=your-key-here
+```
+
+### Known Issues & Next Steps
+
+**Issue 1: Citation Tracking**
+- PaperQA returns citations like `(Weiner2012, Biomarker2025)` but we don't have easy access to:
+  - Full paper titles
+  - PMC IDs or PMIDs
+  - Links to papers
+  - Which corpus the citation came from
+  
+**Needed:** Enhance query.py to return structured citation data, not just the answer text.
+
+**Possible solutions:**
+1. Parse `result.session.contexts` from PaperQA to extract full citation metadata
+2. Return JSON with `{answer: "...", citations: [{pmcid, title, excerpt, ...}]}`
+3. Display citations as a separate collapsible section in UI
+
+**Issue 2: ARTL MCP Integration**
+- artl-mcp is in mcp_config.json but disabled (commented out)
+- Dependency issue: onnxruntime incompatible with macOS 12 ARM64
+- Need to either:
+  1. Fix artl-mcp upstream dependency
+  2. Make it optional/conditional
+  3. Use alternative paper fetching method
+
+**Once working, ARTL would enable:**
+- Fetching papers by DOI/PMID/PMCID not in curated corpus
+- Comparing curated vs. external recent papers
+- Building citations with external sources
+
+**Issue 3: Reasoning/Tool Call Visibility**
+- Attempted to show Claude's tool calls and reasoning in UI
+- Claude CLI with `--print` outputs final answer only, not intermediate steps
+- Without `--print`, output format is hard to parse
+- `--verbose` flag doesn't show what we expected
+
+**Current behavior:** Simple "Thinking..." indicator, then final answer
+
+**Future options:**
+1. Accept this limitation (simple is fine)
+2. Parse Claude CLI JSON output if available
+3. Build custom agentic loop instead of using Claude CLI subprocess
+4. Add logging/instrumentation to track which tools are called
+
+### Next Priorities
+
+1. **Improve citation tracking** - Most important for researchers
+   - Return structured citation metadata from PaperQA
+   - Display citations prominently with PMC IDs and links
+   
+2. **Fix/enable ARTL MCP** - Extends beyond curated corpus
+   - Resolve onnxruntime dependency issue
+   - Test external paper retrieval
+   - Update CLAUDE.md with ARTL usage instructions
+
+3. **Test that Claude actually uses PaperQA** - Validation
+   - Verify CLAUDE.md instructions are followed
+   - Check if agent calls the bash tool to run query.py
+   - May need to adjust prompting
+
+4. **Optional: Web search integration** - For recent 2024/2025 papers
+   - Only after ARTL is working
+   - Lower priority than citation tracking
