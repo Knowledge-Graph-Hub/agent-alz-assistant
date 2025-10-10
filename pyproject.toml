@@ -13,6 +13,7 @@ dependencies = [
     "nicegui>=2.0.0",
     "python-dotenv>=1.0.0",
     "paper-qa>=5.0.0",
+    "mcp>=1.0.0",
 ]
 
 [build-system]
