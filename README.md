@@ -13,6 +13,17 @@ This is an agentic AI assistant built with:
 
 ## Setup
 
+### Prerequisites
+
+You need access to the indexed PaperQA corpora. These are located at:
+- `~/curategpt/data/Bateman_LLM_360/` - Small corpus (360 papers)
+- `~/curategpt/data/alz_papers_1k_text/` - Medium corpus (1,065 papers)
+- `~/curategpt/data/alz_papers_3k_text/` - Large corpus (3,000 papers)
+
+Each corpus directory must contain a `.pqa/indexes/` subdirectory with the PaperQA indexes.
+
+### Installation
+
 1. Install dependencies:
    ```bash
    uv sync

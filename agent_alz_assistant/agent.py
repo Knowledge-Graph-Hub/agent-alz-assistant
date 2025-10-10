@@ -24,21 +24,22 @@ class ClaudeAgent:
         self.env["ANTHROPIC_BASE_URL"] = "https://api.cborg.lbl.gov"
         self.env["ANTHROPIC_MODEL"] = "anthropic/claude-sonnet"
 
-    async def chat(self, query: str, history: List = None) -> str:
+    async def chat(self, query: str, history: List = None, on_output=None) -> str:
         """
         Send a query to Claude Code CLI and get response
 
         Args:
             query: User's question/request
             history: Conversation history (optional, not used yet)
+            on_output: Optional async callback to receive streaming output line by line
 
         Returns:
             Claude's response as a string
         """
         # Build command
+        # NOTE: Not using --print so we can see intermediate tool calls
         cmd = [
             "claude",
-            "--print",
             "--dangerously-skip-permissions",
         ]
 
@@ -46,23 +47,58 @@ class ClaudeAgent:
         if self.mcp_config_path.exists():
             cmd.extend(["--mcp-config", str(self.mcp_config_path)])
 
-        # Run Claude CLI
+        # Run Claude CLI from the project root (where CLAUDE.md is)
+        project_root = Path(__file__).parent.parent
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=self.env,
+            cwd=str(project_root),  # Run from project root so CLAUDE.md is found
         )
 
-        # Send query
-        stdout, stderr = await process.communicate(query.encode())
+        # Send query and close stdin
+        process.stdin.write(query.encode())
+        process.stdin.close()
+        await process.stdin.wait_closed()
+
+        # Stream output
+        stdout_lines = []
+        stderr_lines = []
+        
+        async def read_stdout():
+            while True:
+                line = await process.stdout.readline()
+                if not line:
+                    break
+                decoded = line.decode()
+                stdout_lines.append(decoded)
+                if on_output:
+                    await on_output(decoded)
+        
+        async def read_stderr():
+            while True:
+                line = await process.stderr.readline()
+                if not line:
+                    break
+                decoded = line.decode()
+                stderr_lines.append(decoded)
+                # Send stderr to callback too (verbose output goes here)
+                if on_output:
+                    await on_output(decoded)
+        
+        # Read both streams concurrently
+        await asyncio.gather(read_stdout(), read_stderr())
+        
+        # Wait for process to finish
+        await process.wait()
 
         # Check for errors
         if process.returncode != 0:
-            error_msg = stderr.decode() if stderr else "Unknown error"
+            error_msg = ''.join(stderr_lines) if stderr_lines else "Unknown error"
             raise RuntimeError(f"Claude CLI failed: {error_msg}")
 
         # Return response
-        response = stdout.decode().strip()
+        response = ''.join(stdout_lines).strip()
         return response
