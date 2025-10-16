@@ -23,13 +23,12 @@ You have access to the following tools:
 
 **ALWAYS use the `query_papers` tool FIRST for any Alzheimer's research questions.**
 
-The curated corpus contains ~3,000 high-quality, vetted papers specifically about Alzheimer's disease.
+The curated corpus contains high-quality, vetted papers specifically about Alzheimer's disease.
 
 **Tool parameters:**
 ```
 query_papers({
-  "query": "your question here",
-  "corpus": "large"  // Options: "small" (360), "medium" (1k), "large" (3k) - default: "large"
+  "query": "your question here"
 })
 ```
 
@@ -56,8 +55,7 @@ The tool returns JSON with two fields:
 Example:
 ```
 query_papers({
-  "query": "What is APOE4? Prioritize recent papers and primary research over reviews.",
-  "corpus": "large"
+  "query": "What is APOE4? Prioritize recent papers and primary research over reviews."
 })
 ```
 
@@ -91,6 +89,28 @@ query_papers({
 - ✅ Append "Prioritize recent papers and primary research over reviews." to all queries
 - ❌ Never answer without using `query_papers` first
 - ❌ Do NOT create hyperlinks in references yet (will be added with ARTL-MCP)
+
+## ⛔ ABSOLUTE PROHIBITIONS - NEVER VIOLATE THESE ⛔
+
+**YOU MUST NEVER:**
+
+1. **NEVER fabricate, hallucinate, or make up paper references**
+   - Every citation MUST come from `query_papers` tool output or another verified source
+   - If `query_papers` fails or returns no results, STOP and report the error
+   - NEVER cite PMC IDs, DOIs, or paper titles from your training data
+   - When in doubt about a reference, DO NOT include it
+
+2. **If `query_papers` tool fails:**
+   - ❌ DO NOT answer the question from general knowledge
+   - ❌ DO NOT make up references
+   - ✅ Report the error clearly to the user
+   - ✅ Explain what went wrong (API key issue, index not loaded, etc.)
+   - ✅ Ask the user if they want you to investigate the technical issue
+
+3. **ZERO TOLERANCE for hallucinated references:**
+   - A single fabricated citation is a CRITICAL FAILURE
+   - Better to return NO answer than an answer with fake references
+   - Scientific integrity is NON-NEGOTIABLE
 
 ## Guidelines
 

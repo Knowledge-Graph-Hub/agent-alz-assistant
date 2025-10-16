@@ -21,43 +21,43 @@ from paperqa.agents.search import get_directory_index
 app = Server("paperqa-server")
 
 
-async def query_paperqa_corpus(query: str, corpus_id: str = "3") -> dict:
-    """Query PaperQA with the given corpus.
-    
+async def query_paperqa_corpus(query: str) -> dict:
+    """Query PaperQA with the configured corpus.
+
     Args:
         query: Natural language question about Alzheimer's research
-        corpus_id: Which corpus to query (1=small/360, 2=medium/1k, 3=large/3k)
-    
+
     Returns:
         dict with 'answer' and 'citations' keys
     """
-    
-    # Get environment variables - ABSOLUTE PATHS ONLY
-    pqa_home_var = f"PQA_HOME{corpus_id}"
-    pqa_index_var = f"PQA_INDEX{corpus_id}"
-    
-    pqa_home = os.environ.get(pqa_home_var)
+
+    # Get environment variables - FULL PATHS REQUIRED
+    pqa_home = os.environ.get("PQA_HOME")
     if not pqa_home:
-        raise ValueError(f"{pqa_home_var} environment variable is not set!")
-    
-    pqa_index = os.environ.get(pqa_index_var)
+        raise ValueError("PQA_HOME environment variable is not set!")
+
+    pqa_index = os.environ.get("PQA_INDEX")
     if not pqa_index:
-        raise ValueError(f"{pqa_index_var} environment variable is not set!")
-    
-    # Verify paths exist
+        raise ValueError("PQA_INDEX environment variable is not set!")
+
+    # Verify PQA_HOME exists
     home_path = Path(pqa_home).expanduser().resolve()
-    index_path = Path(pqa_index).expanduser().resolve()
-    
     if not home_path.exists():
-        raise ValueError(f"PQA_HOME{corpus_id} does not exist: {home_path}")
-    
+        raise ValueError(f"PQA_HOME does not exist: {home_path}")
+    if not home_path.is_dir():
+        raise ValueError(f"PQA_HOME is not a directory: {home_path}")
+
+    # Verify PQA_INDEX exists
+    index_path = Path(pqa_index).expanduser().resolve()
     if not index_path.exists():
-        raise ValueError(f"PQA_INDEX{corpus_id} does not exist: {index_path}")
-    
-    # Configure PaperQA settings with absolute paths
+        raise ValueError(f"PQA_INDEX does not exist: {index_path}")
+    if not index_path.is_dir():
+        raise ValueError(f"PQA_INDEX is not a directory: {index_path}")
+
+    # Configure PaperQA settings - match working paperqawrapper.py
     settings = Settings(paper_directory=str(home_path))
-    settings.agent.index.index_directory = str(index_path.parent)
     settings.agent.index.name = index_path.name
+    settings.agent.index.index_directory = str(index_path.parent)
     
     # Load the index - NEVER build
     try:
@@ -117,12 +117,6 @@ async def list_tools() -> list[Tool]:
                     "query": {
                         "type": "string",
                         "description": "Natural language question about Alzheimer's research"
-                    },
-                    "corpus": {
-                        "type": "string",
-                        "enum": ["small", "medium", "large", "1", "2", "3"],
-                        "default": "large",
-                        "description": "Which corpus to search: small=360 papers, medium=1k papers, large=3k papers (default)"
                     }
                 },
                 "required": ["query"]
@@ -134,35 +128,21 @@ async def list_tools() -> list[Tool]:
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """Handle tool calls."""
-    
+
     if name == "query_papers":
         query = arguments.get("query")
         if not query:
             raise ValueError("query parameter is required")
-        
-        corpus = arguments.get("corpus", "large")
-        
-        # Map friendly names to corpus IDs
-        corpus_map = {
-            "small": "1",
-            "medium": "2", 
-            "large": "3",
-            "1": "1",
-            "2": "2",
-            "3": "3"
-        }
-        
-        corpus_id = corpus_map.get(corpus, "3")
-        
+
         try:
-            result = await query_paperqa_corpus(query, corpus_id)
-            
+            result = await query_paperqa_corpus(query)
+
             # Return as formatted JSON
             return [TextContent(
                 type="text",
                 text=json.dumps(result, indent=2)
             )]
-            
+
         except Exception as e:
             raise RuntimeError(f"Error querying PaperQA: {e}")
     

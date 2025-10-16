@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "paperqa": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/jtr4v/PythonProject/agent-alz-assistant",
+        "python",
+        "-m",
+        "agent_alz_assistant.mcp_server.paperqa_server"
+      ],
+      "env": {
+        "PQA_HOME": "/Users/jtr4v/PythonProject/agent-alz-assistant/data/alz_papers_1k_text",
+        "PQA_INDEX": "/Users/jtr4v/PythonProject/agent-alz-assistant/data/pqa_index_6755687b2d2650af2e7aa76b43fc21c6"
+      }
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    }
+  }
+}

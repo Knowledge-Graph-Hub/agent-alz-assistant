@@ -7,7 +7,7 @@ Agentic AI assistant for Alzheimer's disease research with literature retrieval 
 This is an agentic AI assistant built with:
 - **NiceGUI** for the web interface
 - **Claude Code CLI** for agentic orchestration
-- **CBORG API** (LBL proxy to AWS Bedrock)
+- **CBORG API** (LBL proxy for accessing AI models)
 - **artl-mcp** for scientific literature retrieval
 - **mcp-server-fetch** for web content fetching
 
@@ -16,11 +16,9 @@ This is an agentic AI assistant built with:
 ### Prerequisites
 
 You need access to the indexed PaperQA corpora. These are located at:
-- `~/curategpt/data/Bateman_LLM_360/` - Small corpus (360 papers)
-- `~/curategpt/data/alz_papers_1k_text/` - Medium corpus (1,065 papers)
-- `~/curategpt/data/alz_papers_3k_text/` - Large corpus (3,000 papers)
+- `~/curategpt/data/alz_papers_1k_text/`
 
-Each corpus directory must contain a `.pqa/indexes/` subdirectory with the PaperQA indexes.
+And also a paperqa index directory (sometimes located in .pqa/indexes/ if you indexed using paperqa)
 
 ### Installation
 
@@ -29,20 +27,21 @@ Each corpus directory must contain a `.pqa/indexes/` subdirectory with the Paper
    uv sync
    ```
 
-2. Configure API keys:
+2. Configure MCP servers (includes API keys and paths):
    ```bash
-   cp .env.example .env
-   # Edit .env with your API key
+   cp mcp_config.json.example mcp_config.json
+   # Edit mcp_config.json with your settings:
+   #  - Set PQA_HOME to your paper corpus directory
+   #  - Set PQA_INDEX to your PaperQA index directory
+   #  - Set OPENAI_API_KEY for PaperQA
    ```
 
-   Or set environment variables:
+3. Set up CBORG API key:
    ```bash
-export ANTHROPIC_AUTH_TOKEN=$(cat ~/cborg_alz.key)
-   export ANTHROPIC_BASE_URL=https://api.cborg.lbl.gov
-   export ANTHROPIC_MODEL=anthropic/claude-sonnet
+   echo "your-cborg-key" > ~/cborg_alz.key
    ```
 
-3. Customize the agent:
+4. Customize the agent (optional):
    - Edit `CLAUDE.md` to modify the system prompt
    - Edit `mcp_config.json` to add/remove MCP servers
 
