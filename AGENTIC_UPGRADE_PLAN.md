@@ -814,3 +814,177 @@ OPENAI_API_KEY=your-key-here
    - Allow users to resume conversations via URL or session ID
    - Implement conversation list/history UI
    - Consider privacy/data retention policies
+
+---
+
+## Progress Notes - October 12, 2025
+
+### Multi-Agent Architecture Design (Planned)
+
+**Goal**: Replace simple MCP tool calls with specialized Claude subagents that provide domain-specific reasoning and synthesis.
+
+**Architecture**: Hybrid approach with predictable foundation + intelligent expansion
+
+#### Layer 1: Python Orchestration (Predictable)
+
+```python
+async def chat(query):
+    """
+    Workflow:
+    1. ALWAYS dispatch PaperQA subagent first (hardcoded, predictable)
+    2. Main agent evaluates results and decides on expansion (Claude's judgment)
+    3. Synthesize all results with main agent
+    """
+
+    # ALWAYS start here (hardcoded for predictability)
+    paperqa_result = await dispatch_subagent(
+        agent_type="paperqa",
+        prompt=query
+    )
+
+    # Main agent decides whether to expand (uses Claude's judgment)
+    expansion_decision = await main_agent.evaluate_expansion(
+        query=query,
+        paperqa_result=paperqa_result
+    )
+
+    # Execute expansions if decided
+    additional_results = []
+    if expansion_decision.needs_pubmed:
+        pubmed_result = await dispatch_subagent("pubmed", query)
+        additional_results.append(pubmed_result)
+
+    if expansion_decision.needs_kg:
+        kg_result = await dispatch_subagent("kg", query)
+        additional_results.append(kg_result)
+
+    # Main agent synthesizes (Claude's expertise)
+    final_answer = await main_agent.synthesize(
+        query=query,
+        paperqa_result=paperqa_result,
+        additional_results=additional_results,
+        decisions_made=expansion_decision
+    )
+
+    return final_answer
+```
+
+#### Layer 2: Main Agent (Orchestrator)
+
+**Role**: Evaluate PaperQA results, decide on expansions, synthesize across sources
+
+**CLAUDE.md instructions**:
+- Evaluate PaperQA confidence/completeness
+- Decide when to dispatch PubMed or KG subagents
+- Synthesize results, prioritizing curated corpus
+- Explain decisions made in "Sources Consulted" section
+
+**Expansion triggers**:
+- PubMed: Low confidence, recent papers requested, emerging topics
+- KG: Questions about genes/pathways/entities/relationships
+- Stay with PaperQA only: High confidence with 3+ citations
+
+**Decision transparency**: Main agent autonomously decides but explains afterward in response
+
+#### Layer 3: Specialized Subagents
+
+**PaperQA Subagent** (`subagents/paperqa/CLAUDE.md`):
+- Searches curated 3k Alzheimer's corpus
+- Prioritizes recent papers and primary research over reviews
+- Uses paperqa MCP
+- Returns: `{answer, citations, confidence, paper_count}`
+
+**PubMed Subagent** (`subagents/pubmed/CLAUDE.md`):
+- Searches all of PubMed for papers not in curated corpus
+- Focuses on 2024-2025 recent papers and emerging topics
+- Uses ARTL MCP to fetch papers
+- Returns: Papers found + abstracts + relevance assessment
+
+**Knowledge Graph Subagent** (`subagents/kg/CLAUDE.md`):
+- Queries Alzheimer's knowledge graph (KGX TSV data)
+- Specializes in genes, pathways, entities, relationships
+- Uses KG MCP (to be built)
+- Returns: Entities + relationships + supporting evidence
+
+#### Response Format
+
+Main agent returns synthesis with decision transparency:
+
+```markdown
+[Synthesized answer prioritizing curated corpus...]
+
+## Sources Consulted
+
+✅ **Curated Corpus (PaperQA)**: Found 12 relevant papers
+- High confidence answer
+- Key citations: PMC123456, PMC789012
+
+✅ **PubMed Search**: Found 3 recent papers (2024-2025)
+- Confirms curated findings
+- Adds: Novel biomarker study (March 2025)
+
+❌ **Knowledge Graph**: Not queried (sufficient evidence from literature)
+
+## Answer
+[Final synthesis with inline citations...]
+
+## References
+[Full citation list...]
+```
+
+#### Implementation Tasks
+
+1. **Refactor ClaudeAgent class** - Add subagent dispatching via Task tool
+2. **Create subagent directory structure** - `/subagents/{paperqa,pubmed,kg}/CLAUDE.md`
+3. **Update main CLAUDE.md** - Add orchestration and synthesis instructions
+4. **Build KG MCP server** - Query knowledge graph from KGX TSV files
+5. **Enable ARTL MCP** - Fix onnxruntime dependency for PubMed fetching
+6. **Add status feed** - Real-time UI updates showing which subagents are active
+7. **Test workflows** - Validate decision logic and synthesis quality
+
+#### UX Enhancement: Real-Time Status Feed
+
+**Requirement**: Show users what the agent is working on before final answer
+
+**Approach**: Stream status updates to NiceGUI UI as subagents are dispatched/complete
+
+Example status feed during query:
+```
+🔍 Dispatching PaperQA subagent...
+✅ PaperQA complete: Found 12 papers, high confidence
+🤔 Evaluating if additional sources needed...
+🔍 Dispatching PubMed subagent for recent papers...
+✅ PubMed complete: Found 3 papers from 2024-2025
+📝 Synthesizing results across sources...
+✅ Complete!
+```
+
+**Implementation**:
+- Add callback to `dispatch_subagent()` that emits status events
+- NiceGUI subscribes to events and updates status container in real-time
+- Show spinner/progress indicator while subagents run
+
+### Why This Approach?
+
+**Benefits**:
+- **Predictable**: Always starts with trusted curated corpus (PaperQA)
+- **Intelligent**: Claude decides when to expand based on confidence/context
+- **Specialized**: Each subagent has domain-specific expertise
+- **Transparent**: Users see what sources were consulted and why
+- **Quality-first**: Prioritizes vetted papers, expands only when needed
+- **Fast**: Most queries answered by single subagent (PaperQA only)
+
+**Trade-offs**:
+- More complex than simple MCP tool calls
+- Requires careful prompt engineering for each subagent
+- Subagent coordination adds latency (mitigated by parallelization where possible)
+
+### Next Steps
+
+When ready to implement:
+1. Start with refactoring ClaudeAgent to support subagent dispatching
+2. Create subagent directory structure and CLAUDE.md files
+3. Test PaperQA subagent in isolation
+4. Add expansion logic to main agent
+5. Build PubMed and KG subagents
+6. Implement real-time status feed in UI

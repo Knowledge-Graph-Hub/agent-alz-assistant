@@ -3,6 +3,7 @@
 import asyncio
 import os
 import subprocess
+import uuid
 from pathlib import Path
 from typing import List
 
@@ -13,6 +14,10 @@ class ClaudeAgent:
     def __init__(self):
         self.mcp_config_path = Path(__file__).parent.parent / "mcp_config.json"
         self.claude_md_path = Path(__file__).parent.parent / "CLAUDE.md"
+
+        # Generate a unique session ID for this conversation
+        self.session_id = str(uuid.uuid4())
+        self.is_first_message = True  # Track if this is the first message
 
         # Set up environment for Claude CLI
         self.env = os.environ.copy()
@@ -30,7 +35,7 @@ class ClaudeAgent:
 
         Args:
             query: User's question/request
-            history: Conversation history (optional, not used yet)
+            history: Conversation history (optional, maintained via session_id)
             on_output: Optional async callback to receive streaming output line by line
 
         Returns:
@@ -42,6 +47,14 @@ class ClaudeAgent:
             "claude",
             "--dangerously-skip-permissions",
         ]
+
+        # For first message: use --session-id to create session
+        # For subsequent messages: use --resume to continue the session
+        if self.is_first_message:
+            cmd.extend(["--session-id", self.session_id])
+            self.is_first_message = False
+        else:
+            cmd.extend(["--resume", self.session_id])
 
         # Add MCP config if it exists
         if self.mcp_config_path.exists():
