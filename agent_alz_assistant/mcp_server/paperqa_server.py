@@ -73,6 +73,8 @@ async def query_paperqa_corpus(query: str) -> dict:
     response = await agent_query(query=query, settings=settings)
     
     # Extract citations from contexts
+    # NOTE: We do NOT include DOIs from PaperQA because they may be hallucinated.
+    # Only return reliable metadata: PMCID (from filename) and citation text (with caveat).
     citations = []
     seen_docs = set()
     for ctx in response.session.contexts:
@@ -83,11 +85,11 @@ async def query_paperqa_corpus(query: str) -> dict:
                 seen_docs.add(doc.docname)
                 citation_info = {
                     'key': doc.docname,
-                    'doi': doc.doi if hasattr(doc, 'doi') and doc.doi else None,
                     'citation': doc.citation if hasattr(doc, 'citation') else None,
-                    'score': ctx.score
+                    'score': ctx.score,
+                    'note': 'Citation text from PaperQA may need verification'
                 }
-                # Try to extract PMC ID from filename if available
+                # Extract PMC ID from filename if available (most reliable metadata)
                 if doc.docname.startswith('PMC'):
                     citation_info['pmcid'] = doc.docname.split('_')[0]
                 citations.append(citation_info)
