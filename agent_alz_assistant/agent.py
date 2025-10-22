@@ -20,14 +20,9 @@ class ClaudeAgent:
         self.is_first_message = True  # Track if this is the first message
 
         # Set up environment for Claude CLI
+        # Environment variables are already loaded from .env by app.py
+        # Just copy the current environment (which includes .env vars)
         self.env = os.environ.copy()
-
-        # CBORG configuration
-        api_key_path = Path("~/cborg_alz.key").expanduser()
-        if api_key_path.exists():
-            self.env["ANTHROPIC_AUTH_TOKEN"] = api_key_path.read_text().strip()
-        self.env["ANTHROPIC_BASE_URL"] = "https://api.cborg.lbl.gov"
-        self.env["ANTHROPIC_MODEL"] = "anthropic/claude-sonnet"
 
     async def chat(self, query: str, history: List = None, on_output=None) -> str:
         """

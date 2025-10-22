@@ -2,6 +2,7 @@
 """agent-alz-assistant - Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis"""
 
 import asyncio
+import bcrypt
 import os
 from pathlib import Path
 
@@ -12,6 +13,14 @@ from agent_alz_assistant.agent import ClaudeAgent
 
 # Load environment variables
 load_dotenv()
+
+# Get password hash from environment
+PASSWORD_HASH = os.getenv("APP_PASSWORD_HASH", "").encode()
+
+# Get storage secret from environment (required for security)
+STORAGE_SECRET = os.getenv("STORAGE_SECRET")
+if not STORAGE_SECRET:
+    raise ValueError("STORAGE_SECRET must be set in .env file - see .env.example")
 
 # Initialize agent
 agent = ClaudeAgent()
@@ -29,9 +38,42 @@ class ChatMessage:
 conversation_history = []
 
 
+def check_password(password: str) -> bool:
+    """Check if password matches the hash"""
+    if not PASSWORD_HASH:
+        return True  # No password set, allow access
+    try:
+        return bcrypt.checkpw(password.encode(), PASSWORD_HASH)
+    except Exception:
+        return False
+
+
+@ui.page("/login")
+async def login():
+    """Login page"""
+    def try_login():
+        if check_password(password_input.value):
+            nicegui_app.storage.user["authenticated"] = True
+            ui.navigate.to("/")
+        else:
+            ui.notify("Invalid password", color="negative")
+            password_input.value = ""
+
+    with ui.column().classes("absolute-center items-center"):
+        ui.markdown("# agent-alz-assistant")
+        ui.markdown("_Alzheimer's Disease Research Assistant_")
+        password_input = ui.input("Password", password=True, password_toggle_button=True).classes("w-64").on("keydown.enter", try_login)
+        ui.button("Login", on_click=try_login).classes("w-64")
+
+
 @ui.page("/")
 async def index():
     """Main chat interface"""
+
+    # Check authentication
+    if not nicegui_app.storage.user.get("authenticated", False):
+        ui.navigate.to("/login")
+        return
 
     ui.markdown("# agent-alz-assistant")
     ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
@@ -124,4 +166,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         port=8082,
         reload=False,
         show=True,
+        storage_secret=STORAGE_SECRET,
     )
