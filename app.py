@@ -22,6 +22,12 @@ STORAGE_SECRET = os.getenv("STORAGE_SECRET")
 if not STORAGE_SECRET:
     raise ValueError("STORAGE_SECRET must be set in .env file - see .env.example")
 
+# Get port from environment (required)
+PORT = os.getenv("PORT")
+if not PORT:
+    raise ValueError("PORT must be set in .env file - see .env.example")
+PORT = int(PORT)
+
 # Initialize agent
 agent = ClaudeAgent()
 
@@ -163,7 +169,7 @@ async def index():
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title="agent-alz-assistant",
-        port=8082,
+        port=PORT,
         reload=False,
         show=True,
         storage_secret=STORAGE_SECRET,
