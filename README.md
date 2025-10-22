@@ -15,19 +15,34 @@ This is an agentic AI assistant built with:
 
 ### Prerequisites
 
-You need access to the indexed PaperQA corpora. These are located at:
-- `~/curategpt/data/alz_papers_1k_text/`
+**Required Software:**
+- **Node.js 18+** (for Claude Code CLI)
+- **Python 3.10+** with `uv` package manager
+- **Claude Code CLI** (installed globally via npm)
 
-And also a paperqa index directory (sometimes located in .pqa/indexes/ if you indexed using paperqa)
+**Required Data:**
+You need access to the indexed PaperQA corpora:
+- Paper corpus directory (e.g., `~/curategpt/data/alz_papers_1k_text/`)
+- PaperQA index directory (usually in `.pqa/indexes/` after indexing)
 
 ### Installation
 
-1. Install dependencies:
+1. **Install Node.js and Claude Code CLI** (if not already installed):
+   ```bash
+   # Install Node.js (Ubuntu/Debian)
+   curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+
+   # Install Claude Code CLI
+   sudo npm install -g @anthropic-ai/claude-code
+   ```
+
+2. Install Python dependencies:
    ```bash
    uv sync
    ```
 
-2. **IMPORTANT: Configure environment variables**:
+3. **IMPORTANT: Configure environment variables**:
 
    **All configuration uses `.env` file** (NOT `mcp_config.json` for secrets):
 
@@ -46,28 +61,33 @@ And also a paperqa index directory (sometimes located in .pqa/indexes/ if you in
    - `ANTHROPIC_AUTH_TOKEN`: Your CBORG API key
 
    **How environment variables work**:
-   - The `.env` file is loaded by `app.py` at startup
-   - All environment variables are inherited by child processes (including MCP servers)
+   - The `.env` file is loaded by `app.py` at startup using `python-dotenv`
+   - All environment variables are inherited by child processes (including MCP servers and Claude CLI)
+   - The Claude Code CLI subprocess inherits `ANTHROPIC_AUTH_TOKEN` from the environment
    - `mcp_config.json` only defines which MCP servers to run, NOT secrets
    - This ensures ONE source of truth for all configuration
+
+   **How Claude authentication works**:
+   - The app spawns Claude Code CLI as a subprocess
+   - Claude CLI reads `ANTHROPIC_AUTH_TOKEN` from environment variables
+   - This token is used to authenticate with the CBORG API
+   - The `.env` file provides this token to the subprocess environment
 
    **To generate a new password hash**:
    ```bash
    python -c "import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())"
    ```
 
-3. Configure MCP servers (defines which servers to load, uses env vars from `.env`):
+4. **IMPORTANT: Configure MCP servers** (defines which servers to load, uses env vars from `.env`):
    ```bash
    cp mcp_config.json.example mcp_config.json
-   # Edit the --directory path to point to your installation
+   # Edit the --directory path in the paperqa server config to point to your installation
+   # Example: "/Users/yourname/PythonProject/agent-alz-assistant" or "/home/ubuntu/agent-alz-assistant"
    ```
 
-4. Alternative: Use CBORG key file (optional, can use .env instead):
-   ```bash
-   echo "your-cborg-key" > ~/cborg_alz.key
-   ```
+   **The application will NOT work without this file!** The `query_papers` tool requires the MCP server to be configured.
 
-4. Customize the agent (optional):
+5. Customize the agent (optional):
    - Edit `CLAUDE.md` to modify the system prompt
    - Edit `mcp_config.json` to add/remove MCP servers
 
