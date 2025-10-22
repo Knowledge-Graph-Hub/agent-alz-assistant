@@ -27,16 +27,40 @@ And also a paperqa index directory (sometimes located in .pqa/indexes/ if you in
    uv sync
    ```
 
-2. Configure MCP servers (includes API keys and paths):
+2. **IMPORTANT: Configure environment variables**:
+
+   **All configuration uses `.env` file** (NOT `mcp_config.json` for secrets):
+
    ```bash
-   cp mcp_config.json.example mcp_config.json
-   # Edit mcp_config.json with your settings:
-   #  - Set PQA_HOME to your paper corpus directory
-   #  - Set PQA_INDEX to your PaperQA index directory
-   #  - Set OPENAI_API_KEY for PaperQA
+   cp .env.example .env
+   # Edit .env with your settings - this file contains ALL secrets and paths
    ```
 
-3. Set up CBORG API key:
+   **Required variables in `.env`**:
+   - `PQA_HOME`: Absolute path to your paper corpus directory
+   - `PQA_INDEX`: Absolute path to your PaperQA index directory
+   - `OPENAI_API_KEY`: Your OpenAI API key (required for PaperQA)
+   - `APP_PASSWORD_HASH`: Bcrypt hash for login password (default: demo123)
+   - `ANTHROPIC_AUTH_TOKEN`: Your CBORG API key
+
+   **How environment variables work**:
+   - The `.env` file is loaded by `app.py` at startup
+   - All environment variables are inherited by child processes (including MCP servers)
+   - `mcp_config.json` only defines which MCP servers to run, NOT secrets
+   - This ensures ONE source of truth for all configuration
+
+   **To generate a new password hash**:
+   ```bash
+   python -c "import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())"
+   ```
+
+3. Configure MCP servers (defines which servers to load, uses env vars from `.env`):
+   ```bash
+   cp mcp_config.json.example mcp_config.json
+   # Edit the --directory path to point to your installation
+   ```
+
+4. Alternative: Use CBORG key file (optional, can use .env instead):
    ```bash
    echo "your-cborg-key" > ~/cborg_alz.key
    ```
