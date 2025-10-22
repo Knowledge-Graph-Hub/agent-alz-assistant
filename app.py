@@ -81,8 +81,10 @@ async def index():
         ui.navigate.to("/login")
         return
 
-    ui.markdown("# agent-alz-assistant")
-    ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
+    # Header
+    with ui.column().classes("w-full max-w-4xl mx-auto p-4"):
+        ui.markdown("# agent-alz-assistant")
+        ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
 
     sample_questions = [
         "What is APOE4 and how does it relate to Alzheimer's?",
@@ -91,16 +93,16 @@ async def index():
         "What is the amyloid cascade hypothesis?",
     ]
 
-    # Chat container
-    chat_container = ui.column().classes("w-full max-w-4xl mx-auto gap-4 mb-20")
+    # Chat container with bottom padding to prevent overlap with footer
+    chat_container = ui.column().classes("w-full max-w-4xl mx-auto gap-4 p-4").style("min-height: 0; padding-bottom: 10px")
 
     # Input area (fixed at bottom)
     with ui.footer().classes("bg-white"):
-        with ui.column().classes("w-full max-w-4xl mx-auto p-4"):
+        with ui.column().classes("w-full max-w-4xl mx-auto p-2"):
             user_input = ui.textarea(
                 placeholder="Ask me anything...",
                 on_change=lambda: None,
-            ).classes("w-full").props("outlined autofocus")
+            ).classes("w-full").props("outlined autofocus rows=2")
 
             # Sample questions label and buttons
             ui.label("Sample questions:").classes("text-sm text-gray-600 mt-2")
