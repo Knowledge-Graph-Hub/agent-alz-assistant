@@ -32,7 +32,7 @@ start:
 	@lsof -ti:$(PORT) | xargs kill -9 2>/dev/null || true
 	@mkdir -p logs
 	@echo "Starting agent-alz-assistant on http://localhost:$(PORT)"
-	@echo "Login password: see APP_PASSWORD_HASH in .env (default: demo123)"
+	@echo "Login password: see APP_PASSWORD_HASH in .env"
 	@LOGFILE="logs/app_$$(date +%Y%m%d_%H%M%S).log"; \
 	echo "Logs: tail -f $$LOGFILE"; \
 	nohup uv run python app.py > $$LOGFILE 2>&1 &

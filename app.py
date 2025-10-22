@@ -84,10 +84,6 @@ async def index():
     ui.markdown("# agent-alz-assistant")
     ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
 
-    # Sample questions
-    with ui.row().classes("w-full max-w-4xl mx-auto gap-2 mb-4 flex-wrap"):
-        ui.label("Sample questions:").classes("text-sm text-gray-600")
-    
     sample_questions = [
         "What is APOE4 and how does it relate to Alzheimer's?",
         "What are the most accurate blood biomarkers for early AD detection?",
@@ -106,7 +102,8 @@ async def index():
                 on_change=lambda: None,
             ).classes("w-full").props("outlined autofocus")
 
-            # Sample question buttons
+            # Sample questions label and buttons
+            ui.label("Sample questions:").classes("text-sm text-gray-600 mt-2")
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 for question in sample_questions:
                     ui.button(
