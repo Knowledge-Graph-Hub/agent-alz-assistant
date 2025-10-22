@@ -4,6 +4,8 @@
 import asyncio
 import bcrypt
 import os
+import sys
+import shutil
 from pathlib import Path
 
 from nicegui import ui, app as nicegui_app
@@ -14,8 +16,24 @@ from agent_alz_assistant.agent import ClaudeAgent
 # Load environment variables
 load_dotenv()
 
-# Get password hash from environment
+# Clean up stale NiceGUI storage to prevent session issues
+# This is important when restarting the app
+NICEGUI_STORAGE = Path(".nicegui")
+if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "true").lower() == "true":
+    print(f"[INFO] Cleaning stale NiceGUI storage at {NICEGUI_STORAGE}")
+    try:
+        shutil.rmtree(NICEGUI_STORAGE)
+        print("[INFO] Storage cleaned successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not clean storage: {e}")
+
+# Authentication settings
+DISABLE_AUTH = os.getenv("DISABLE_AUTH", "false").lower() == "true"
 PASSWORD_HASH = os.getenv("APP_PASSWORD_HASH", "").encode()
+
+if DISABLE_AUTH:
+    print("[WARNING] Authentication is DISABLED! Anyone can access this app.")
+    print("[WARNING] Set DISABLE_AUTH=false in .env to re-enable authentication.")
 
 # Get storage secret from environment (required for security)
 STORAGE_SECRET = os.getenv("STORAGE_SECRET")
@@ -50,7 +68,8 @@ def check_password(password: str) -> bool:
         return True  # No password set, allow access
     try:
         return bcrypt.checkpw(password.encode(), PASSWORD_HASH)
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Password check failed: {e}")
         return False
 
 
@@ -76,8 +95,8 @@ async def login():
 async def index():
     """Main chat interface"""
 
-    # Check authentication
-    if not nicegui_app.storage.user.get("authenticated", False):
+    # Check authentication (skip if disabled)
+    if not DISABLE_AUTH and not nicegui_app.storage.user.get("authenticated", False):
         ui.navigate.to("/login")
         return
 
