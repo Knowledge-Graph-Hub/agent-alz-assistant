@@ -72,30 +72,47 @@ async def query_paperqa_corpus(query: str) -> dict:
     # Run the query
     response = await agent_query(query=query, settings=settings)
     
-    # Extract citations from contexts
+    # Extract both chunk-level contexts and document-level citations
     # NOTE: We do NOT include DOIs from PaperQA because they may be hallucinated.
     # Only return reliable metadata: PMCID (from filename) and citation text (with caveat).
+
+    # Chunk-level data: maps each chunk to its text and metadata
+    chunks = []
+    # Document-level data: unique papers referenced
     citations = []
     seen_docs = set()
+
     for ctx in response.session.contexts:
         if hasattr(ctx.text, 'doc'):
             doc = ctx.text.doc
-            # Avoid duplicates
+
+            # Extract chunk-level information
+            chunk_info = {
+                'name': ctx.text.name if hasattr(ctx.text, 'name') else None,
+                'text': ctx.context if hasattr(ctx, 'context') else '',
+                'score': ctx.score,
+                'docname': doc.docname,
+            }
+            # Extract PMC ID from filename if available
+            if doc.docname.startswith('PMC'):
+                chunk_info['pmcid'] = doc.docname.split('_')[0]
+            chunks.append(chunk_info)
+
+            # Extract document-level citation (avoid duplicates)
             if doc.docname not in seen_docs:
                 seen_docs.add(doc.docname)
                 citation_info = {
                     'key': doc.docname,
                     'citation': doc.citation if hasattr(doc, 'citation') else None,
                     'score': ctx.score,
-                    'note': 'Citation text from PaperQA may need verification'
                 }
-                # Extract PMC ID from filename if available (most reliable metadata)
                 if doc.docname.startswith('PMC'):
                     citation_info['pmcid'] = doc.docname.split('_')[0]
                 citations.append(citation_info)
-    
+
     return {
         'answer': response.session.answer,
+        'chunks': chunks,
         'citations': citations
     }
 
