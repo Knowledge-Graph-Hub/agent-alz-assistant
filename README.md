@@ -37,10 +37,12 @@ And also a paperqa index directory (sometimes located in .pqa/indexes/ if you in
    ```
 
    **Required variables in `.env`**:
+   - `PORT`: Port to run the application on (default: 8602 for agent.alzassistant.org)
    - `PQA_HOME`: Absolute path to your paper corpus directory
    - `PQA_INDEX`: Absolute path to your PaperQA index directory
    - `OPENAI_API_KEY`: Your OpenAI API key (required for PaperQA)
    - `APP_PASSWORD_HASH`: Bcrypt hash for login password (default: demo123)
+   - `STORAGE_SECRET`: Secret for encrypting session cookies (change in production)
    - `ANTHROPIC_AUTH_TOKEN`: Your CBORG API key
 
    **How environment variables work**:
@@ -71,11 +73,26 @@ And also a paperqa index directory (sometimes located in .pqa/indexes/ if you in
 
 ## Running
 
+### Using Make (recommended)
+
 ```bash
-python app.py
+make start
 ```
 
-Then open your browser to http://localhost:8080
+Or for other commands:
+```bash
+make help      # Show all available commands
+make stop      # Stop the application
+make restart   # Restart the application
+```
+
+### Direct Python execution
+
+```bash
+uv run python app.py
+```
+
+Then open your browser to the configured port (default: http://localhost:8602)
 
 ## Customization
 
@@ -100,6 +117,17 @@ Edit `CLAUDE.md` to change how the agent behaves.
 
 ## Development
 
+### Using Make (recommended)
+
+```bash
+make test      # Run tests
+make lint      # Lint code
+make format    # Format code
+make clean     # Clean temporary files
+```
+
+### Manual commands
+
 Run tests:
 ```bash
 uv run pytest
@@ -114,6 +142,17 @@ Format code:
 ```bash
 uv run ruff format .
 ```
+
+## Deployment
+
+The application is configured to run on port 8602 for deployment to agent.alzassistant.org (proxied through Cloudflare).
+
+**Deployment checklist**:
+1. Ensure `.env` file is properly configured on the server with production values
+2. Set `STORAGE_SECRET` to a random string (not the example value)
+3. Set `APP_PASSWORD_HASH` to a strong password hash
+4. Verify `PORT=8602` in `.env`
+5. Run `make start` to start the application
 
 ## License
 
