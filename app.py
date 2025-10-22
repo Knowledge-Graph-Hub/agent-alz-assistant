@@ -4,6 +4,8 @@
 import asyncio
 import bcrypt
 import os
+import sys
+import shutil
 from pathlib import Path
 
 from nicegui import ui, app as nicegui_app
@@ -14,8 +16,24 @@ from agent_alz_assistant.agent import ClaudeAgent
 # Load environment variables
 load_dotenv()
 
-# Get password hash from environment
+# Clean up stale NiceGUI storage to prevent session issues
+# This is important when restarting the app
+NICEGUI_STORAGE = Path(".nicegui")
+if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "true").lower() == "true":
+    print(f"[INFO] Cleaning stale NiceGUI storage at {NICEGUI_STORAGE}")
+    try:
+        shutil.rmtree(NICEGUI_STORAGE)
+        print("[INFO] Storage cleaned successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not clean storage: {e}")
+
+# Authentication settings
+DISABLE_AUTH = os.getenv("DISABLE_AUTH", "false").lower() == "true"
 PASSWORD_HASH = os.getenv("APP_PASSWORD_HASH", "").encode()
+
+if DISABLE_AUTH:
+    print("[WARNING] Authentication is DISABLED! Anyone can access this app.")
+    print("[WARNING] Set DISABLE_AUTH=false in .env to re-enable authentication.")
 
 # Get storage secret from environment (required for security)
 STORAGE_SECRET = os.getenv("STORAGE_SECRET")
@@ -50,7 +68,8 @@ def check_password(password: str) -> bool:
         return True  # No password set, allow access
     try:
         return bcrypt.checkpw(password.encode(), PASSWORD_HASH)
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] Password check failed: {e}")
         return False
 
 
@@ -76,18 +95,16 @@ async def login():
 async def index():
     """Main chat interface"""
 
-    # Check authentication
-    if not nicegui_app.storage.user.get("authenticated", False):
+    # Check authentication (skip if disabled)
+    if not DISABLE_AUTH and not nicegui_app.storage.user.get("authenticated", False):
         ui.navigate.to("/login")
         return
 
-    ui.markdown("# agent-alz-assistant")
-    ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
+    # Header
+    with ui.column().classes("w-full max-w-4xl mx-auto p-4"):
+        ui.markdown("# agent-alz-assistant")
+        ui.markdown("_Agentic AI assistant for Alzheimer's disease research with literature retrieval and knowledge synthesis_")
 
-    # Sample questions
-    with ui.row().classes("w-full max-w-4xl mx-auto gap-2 mb-4 flex-wrap"):
-        ui.label("Sample questions:").classes("text-sm text-gray-600")
-    
     sample_questions = [
         "What is APOE4 and how does it relate to Alzheimer's?",
         "What are the most accurate blood biomarkers for early AD detection?",
@@ -95,18 +112,19 @@ async def index():
         "What is the amyloid cascade hypothesis?",
     ]
 
-    # Chat container
-    chat_container = ui.column().classes("w-full max-w-4xl mx-auto gap-4 mb-20")
+    # Chat container with bottom padding to prevent overlap with footer
+    chat_container = ui.column().classes("w-full max-w-4xl mx-auto gap-4 p-4").style("min-height: 0; padding-bottom: 10px")
 
     # Input area (fixed at bottom)
     with ui.footer().classes("bg-white"):
-        with ui.column().classes("w-full max-w-4xl mx-auto p-4"):
+        with ui.column().classes("w-full max-w-4xl mx-auto p-2"):
             user_input = ui.textarea(
                 placeholder="Ask me anything...",
                 on_change=lambda: None,
-            ).classes("w-full").props("outlined autofocus")
+            ).classes("w-full").props("outlined autofocus rows=2")
 
-            # Sample question buttons
+            # Sample questions label and buttons
+            ui.label("Sample questions:").classes("text-sm text-gray-600 mt-2")
             with ui.row().classes("w-full gap-2 flex-wrap"):
                 for question in sample_questions:
                     ui.button(

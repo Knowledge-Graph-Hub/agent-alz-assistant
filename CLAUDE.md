@@ -43,7 +43,7 @@ The tool returns JSON with two fields:
       "citation": "Full citation with authors, title, journal, year (may need verification)",
       "score": 10,
       "pmcid": "PMC1234567",
-      "note": "Citation text from PaperQA may need verification"
+      "note": "Citations may need verification"
     }
   ]
 }

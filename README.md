@@ -56,7 +56,7 @@ You need access to the indexed PaperQA corpora:
    - `PQA_HOME`: Absolute path to your paper corpus directory
    - `PQA_INDEX`: Absolute path to your PaperQA index directory
    - `OPENAI_API_KEY`: Your OpenAI API key (required for PaperQA)
-   - `APP_PASSWORD_HASH`: Bcrypt hash for login password (default: demo123)
+   - `APP_PASSWORD_HASH`: Bcrypt hash for login password
    - `STORAGE_SECRET`: Secret for encrypting session cookies (change in production)
    - `ANTHROPIC_AUTH_TOKEN`: Your CBORG API key
 

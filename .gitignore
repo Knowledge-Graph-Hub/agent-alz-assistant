@@ -53,8 +53,8 @@ htmlcov/
 Thumbs.db
 data
 
-# Local scripts and utilities
-local_scripts/
+# Notes and local utilities
+notes/
 
 # Logs
 logs/
