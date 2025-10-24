@@ -15,27 +15,32 @@ class ClaudeAgent:
         self.mcp_config_path = Path(__file__).parent.parent / "mcp_config.json"
         self.claude_md_path = Path(__file__).parent.parent / "CLAUDE.md"
 
-        # Generate a unique session ID for this conversation
-        self.session_id = str(uuid.uuid4())
-        self.is_first_message = True  # Track if this is the first message
-
         # Set up environment for Claude CLI
         # Environment variables are already loaded from .env by app.py
         # Just copy the current environment (which includes .env vars)
         self.env = os.environ.copy()
 
-    async def chat(self, query: str, history: List = None, on_output=None) -> str:
+        # Track sessions for each user (key: session_id, value: is_first_message)
+        self.sessions = {}
+
+    async def chat(self, query: str, session_id: str, history: List = None, on_output=None) -> str:
         """
         Send a query to Claude Code CLI and get response
 
         Args:
             query: User's question/request
+            session_id: Unique identifier for this user's session
             history: Conversation history (optional, maintained via session_id)
             on_output: Optional async callback to receive streaming output line by line
 
         Returns:
             Claude's response as a string
         """
+        # Track whether this is the first message for this session
+        is_first_message = session_id not in self.sessions
+        if is_first_message:
+            self.sessions[session_id] = True
+
         # Build command
         # NOTE: Not using --print so we can see intermediate tool calls
         cmd = [
@@ -45,11 +50,10 @@ class ClaudeAgent:
 
         # For first message: use --session-id to create session
         # For subsequent messages: use --resume to continue the session
-        if self.is_first_message:
-            cmd.extend(["--session-id", self.session_id])
-            self.is_first_message = False
+        if is_first_message:
+            cmd.extend(["--session-id", session_id])
         else:
-            cmd.extend(["--resume", self.session_id])
+            cmd.extend(["--resume", session_id])
 
         # Add MCP config if it exists
         if self.mcp_config_path.exists():
