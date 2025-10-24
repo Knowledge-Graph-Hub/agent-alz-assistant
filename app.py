@@ -18,9 +18,10 @@ from agent_alz_assistant.agent import ClaudeAgent
 load_dotenv()
 
 # Clean up stale NiceGUI storage to prevent session issues
-# This is important when restarting the app
+# DISABLED BY DEFAULT - cleaning storage logs users out
+# Set CLEAN_STORAGE=true in .env if you need to clear sessions
 NICEGUI_STORAGE = Path(".nicegui")
-if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "true").lower() == "true":
+if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "false").lower() == "true":
     print(f"[INFO] Cleaning stale NiceGUI storage at {NICEGUI_STORAGE}")
     try:
         shutil.rmtree(NICEGUI_STORAGE)
@@ -90,7 +91,7 @@ async def login():
     """Login page"""
     def try_login():
         if check_password(password_input.value):
-            nicegui_app.storage.browser["authenticated"] = True
+            nicegui_app.storage.user["authenticated"] = True
             ui.navigate.to("/")
         else:
             ui.notify("Invalid password", color="negative")
@@ -108,7 +109,7 @@ async def index():
     """Main chat interface"""
 
     # Check authentication (skip if disabled)
-    if not DISABLE_AUTH and not nicegui_app.storage.browser.get("authenticated", False):
+    if not DISABLE_AUTH and not nicegui_app.storage.user.get("authenticated", False):
         ui.navigate.to("/login")
         return
 

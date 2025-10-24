@@ -1,8 +1,7 @@
 .PHONY: start stop restart install test lint format clean deploy logs help
 
-# Load environment variables from .env
-include .env
-export
+# Read PORT from .env without using include (to avoid mangling APP_PASSWORD_HASH)
+PORT := $(shell grep '^PORT=' .env 2>/dev/null | cut -d '=' -f 2)
 
 # Deployment configuration
 DEPLOY_HOST ?= gassh
