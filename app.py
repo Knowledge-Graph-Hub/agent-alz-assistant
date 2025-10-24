@@ -27,6 +27,17 @@ if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "true").lower() == "t
     except Exception as e:
         print(f"[WARNING] Could not clean storage: {e}")
 
+# Clean up old plot files on restart
+PLOTS_DIR = Path("static/plots")
+if PLOTS_DIR.exists() and os.getenv("CLEAN_PLOTS", "true").lower() == "true":
+    print(f"[INFO] Cleaning old plots at {PLOTS_DIR}")
+    try:
+        for plot_file in PLOTS_DIR.glob("*.png"):
+            plot_file.unlink()
+        print("[INFO] Plots cleaned successfully")
+    except Exception as e:
+        print(f"[WARNING] Could not clean plots: {e}")
+
 # Authentication settings
 DISABLE_AUTH = os.getenv("DISABLE_AUTH", "false").lower() == "true"
 PASSWORD_HASH = os.getenv("APP_PASSWORD_HASH", "").encode()
@@ -109,7 +120,7 @@ async def index():
         "What is APOE4 and how does it relate to Alzheimer's?",
         "What are the most accurate blood biomarkers for early AD detection?",
         "Explain the role of tau protein in Alzheimer's disease",
-        "What is the amyloid cascade hypothesis?",
+        "Create a plot summarizing diagnostic accuracy of tests for Alzheimer's disease",
     ]
 
     # Chat container with bottom padding to prevent overlap with footer
@@ -185,6 +196,9 @@ async def index():
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    # Serve static files for plots
+    nicegui_app.add_static_files('/static', 'static')
+
     ui.run(
         title="agent-alz-assistant",
         port=PORT,

@@ -16,7 +16,18 @@
       "args": [
         "artl-mcp"
       ]
-    },    
+    },
+    "plotting": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/path/to/agent-alz-assistant",
+        "python",
+        "-m",
+        "agent_alz_assistant.mcp_server.plotting_server"
+      ]
+    },
     "fetch": {
       "command": "uvx",
       "args": ["mcp-server-fetch"]
