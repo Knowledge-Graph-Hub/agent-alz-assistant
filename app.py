@@ -18,9 +18,10 @@ from agent_alz_assistant.agent import ClaudeAgent
 load_dotenv()
 
 # Clean up stale NiceGUI storage to prevent session issues
-# This is important when restarting the app
+# DISABLED BY DEFAULT - cleaning storage logs users out
+# Set CLEAN_STORAGE=true in .env if you need to clear sessions
 NICEGUI_STORAGE = Path(".nicegui")
-if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "true").lower() == "true":
+if NICEGUI_STORAGE.exists() and os.getenv("CLEAN_STORAGE", "false").lower() == "true":
     print(f"[INFO] Cleaning stale NiceGUI storage at {NICEGUI_STORAGE}")
     try:
         shutil.rmtree(NICEGUI_STORAGE)
