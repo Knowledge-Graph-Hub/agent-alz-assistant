@@ -58,3 +58,4 @@ notes/
 
 # Logs
 logs/
+static/plots/*.png
