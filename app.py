@@ -6,6 +6,7 @@ import bcrypt
 import os
 import sys
 import shutil
+import uuid
 from pathlib import Path
 
 from nicegui import ui, app as nicegui_app
@@ -89,7 +90,7 @@ async def login():
     """Login page"""
     def try_login():
         if check_password(password_input.value):
-            nicegui_app.storage.user["authenticated"] = True
+            nicegui_app.storage.browser["authenticated"] = True
             ui.navigate.to("/")
         else:
             ui.notify("Invalid password", color="negative")
@@ -107,9 +108,13 @@ async def index():
     """Main chat interface"""
 
     # Check authentication (skip if disabled)
-    if not DISABLE_AUTH and not nicegui_app.storage.user.get("authenticated", False):
+    if not DISABLE_AUTH and not nicegui_app.storage.browser.get("authenticated", False):
         ui.navigate.to("/login")
         return
+
+    # Generate a unique session ID for this page load
+    # Each page load gets a fresh session (no persistence across reloads)
+    session_id = str(uuid.uuid4())
 
     # Header
     with ui.column().classes("w-full max-w-4xl mx-auto p-4"):
@@ -170,7 +175,7 @@ async def index():
 
                 # Get response from agent
                 try:
-                    response = await agent.chat(query, conversation_history)
+                    response = await agent.chat(query, session_id, conversation_history)
 
                     # Remove thinking indicator
                     chat_container.remove(thinking)
