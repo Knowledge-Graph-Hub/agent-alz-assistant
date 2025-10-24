@@ -91,7 +91,7 @@ async def login():
     """Login page"""
     def try_login():
         if check_password(password_input.value):
-            nicegui_app.storage.browser["authenticated"] = True
+            nicegui_app.storage.user["authenticated"] = True
             ui.navigate.to("/")
         else:
             ui.notify("Invalid password", color="negative")
@@ -109,7 +109,7 @@ async def index():
     """Main chat interface"""
 
     # Check authentication (skip if disabled)
-    if not DISABLE_AUTH and not nicegui_app.storage.browser.get("authenticated", False):
+    if not DISABLE_AUTH and not nicegui_app.storage.user.get("authenticated", False):
         ui.navigate.to("/login")
         return
 
