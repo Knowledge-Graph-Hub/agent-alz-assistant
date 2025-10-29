@@ -3,10 +3,14 @@
 
 import asyncio
 import bcrypt
+import json
+import logging
 import os
 import sys
 import shutil
 import uuid
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from nicegui import ui, app as nicegui_app
@@ -16,6 +20,21 @@ from agent_alz_assistant.agent import ClaudeAgent
 
 # Load environment variables
 load_dotenv()
+
+# Set up query logging (thread-safe)
+LOGS_DIR = Path("logs")
+LOGS_DIR.mkdir(exist_ok=True)
+
+query_logger = logging.getLogger("query_log")
+query_logger.setLevel(logging.INFO)
+query_handler = RotatingFileHandler(
+    LOGS_DIR / "queries.jsonl",
+    maxBytes=10*1024*1024,  # 10MB per file
+    backupCount=5,  # Keep 5 backup files
+)
+query_handler.setFormatter(logging.Formatter("%(message)s"))
+query_logger.addHandler(query_handler)
+query_logger.propagate = False  # Don't propagate to root logger
 
 # Clean up stale NiceGUI storage to prevent session issues
 # DISABLED BY DEFAULT - cleaning storage logs users out
@@ -167,6 +186,17 @@ async def index():
 
                 # Add user message to history
                 conversation_history.append(ChatMessage("user", query))
+
+                # Log query (thread-safe)
+                log_entry = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "session_id": session_id,
+                    "user_query": query,
+                    "query_length": len(query),
+                    "is_sample_question": query in sample_questions,
+                    "type": "user_query"
+                }
+                query_logger.info(json.dumps(log_entry))
 
                 # Show thinking indicator
                 with chat_container:
