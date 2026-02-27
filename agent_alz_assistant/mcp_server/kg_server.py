@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 """MCP server for querying the kg-alzheimers knowledge graph via DuckDB.
 
-Loads KGX-format TSV files (nodes + edges) into an in-memory DuckDB database
-and exposes search/query tools over the Model Context Protocol.
+Loads KGX-format TSV files (nodes + edges) into a persistent on-disk DuckDB
+database and exposes search/query tools over the Model Context Protocol.
+
+On first run the TSV files are imported and indexed; subsequent starts reuse
+the on-disk database file, keeping memory usage low.
 """
 
 import asyncio
@@ -28,7 +31,11 @@ def _get_db() -> duckdb.DuckDBPyConnection:
 
 
 def _init_db() -> duckdb.DuckDBPyConnection:
-    """Load KGX TSV files into an in-memory DuckDB instance."""
+    """Open (or create) a persistent on-disk DuckDB database.
+
+    If the database file already exists the TSV import is skipped entirely,
+    making subsequent starts near-instant and keeping RAM usage low.
+    """
     global _db
 
     data_dir = os.environ.get("KG_DATA_DIR")
@@ -36,55 +43,68 @@ def _init_db() -> duckdb.DuckDBPyConnection:
         raise ValueError("KG_DATA_DIR environment variable is not set!")
 
     data_path = Path(data_dir).expanduser().resolve()
+    db_file = data_path / "kg-alzheimers.duckdb"
     nodes_file = data_path / "kg-alzheimers_nodes.tsv"
     edges_file = data_path / "kg-alzheimers_edges.tsv"
 
-    for f in (nodes_file, edges_file):
-        if not f.exists():
-            raise FileNotFoundError(f"KGX file not found: {f}")
+    needs_import = not db_file.exists()
 
-    conn = duckdb.connect(":memory:")
+    if needs_import:
+        for f in (nodes_file, edges_file):
+            if not f.exists():
+                raise FileNotFoundError(f"KGX file not found: {f}")
 
-    # Load nodes — keep the columns we actually need.
-    conn.execute(f"""
-        CREATE TABLE nodes AS
-        SELECT
-            id,
-            category,
-            name,
-            description,
-            synonym,
-            exact_synonyms,
-            symbol,
-            full_name,
-            in_taxon_label
-        FROM read_csv('{nodes_file}',
-                      delim='\t', header=true, quote='',
-                      ignore_errors=true, all_varchar=true)
-    """)
+    conn = duckdb.connect(str(db_file))
 
-    # Load edges — keep useful columns.
-    conn.execute(f"""
-        CREATE TABLE edges AS
-        SELECT
-            subject,
-            predicate,
-            object,
-            category,
-            primary_knowledge_source,
-            publications,
-            knowledge_level,
-            has_evidence,
-            negated
-        FROM read_csv('{edges_file}',
-                      delim='\t', header=true, quote='',
-                      ignore_errors=true, all_varchar=true)
-    """)
+    if needs_import:
+        print("[KG] Importing TSV files into DuckDB (first run, this may take a few minutes)...")
 
-    # Indexes for fast lookups.
-    conn.execute("CREATE INDEX idx_nodes_id ON nodes(id)")
-    conn.execute("CREATE INDEX idx_edges_subject ON edges(subject)")
-    conn.execute("CREATE INDEX idx_edges_object ON edges(object)")
+        # Load nodes — keep the columns we actually need.
+        conn.execute(f"""
+            CREATE TABLE nodes AS
+            SELECT
+                id,
+                category,
+                name,
+                description,
+                synonym,
+                exact_synonyms,
+                symbol,
+                full_name,
+                in_taxon_label
+            FROM read_csv('{nodes_file}',
+                          delim='\t', header=true, quote='',
+                          ignore_errors=true, all_varchar=true)
+        """)
+
+        # Load edges — keep useful columns.
+        conn.execute(f"""
+            CREATE TABLE edges AS
+            SELECT
+                subject,
+                predicate,
+                object,
+                category,
+                primary_knowledge_source,
+                publications,
+                knowledge_level,
+                has_evidence,
+                negated
+            FROM read_csv('{edges_file}',
+                          delim='\t', header=true, quote='',
+                          ignore_errors=true, all_varchar=true)
+        """)
+
+        # Indexes for fast lookups.
+        conn.execute("CREATE INDEX idx_nodes_id ON nodes(id)")
+        conn.execute("CREATE INDEX idx_edges_subject ON edges(subject)")
+        conn.execute("CREATE INDEX idx_edges_object ON edges(object)")
+
+        node_count = conn.execute("SELECT count(*) FROM nodes").fetchone()[0]
+        edge_count = conn.execute("SELECT count(*) FROM edges").fetchone()[0]
+        print(f"[KG] Import complete: {node_count:,} nodes, {edge_count:,} edges")
+    else:
+        print(f"[KG] Using existing database: {db_file}")
 
     _db = conn
     return conn
