@@ -56,6 +56,10 @@ data
 # Notes and local utilities
 notes/
 
+# DuckDB persistent databases
+*.duckdb
+*.duckdb.wal
+
 # Logs
 logs/
 static/plots/*.png
