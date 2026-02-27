@@ -17,6 +17,7 @@ You have access to the following tools:
 
 - **query_papers** (paperqa MCP): Query curated Alzheimer's disease papers (**MOST IMPORTANT - use this first!**)
 - **create_plot** (plotting MCP): Create publication-quality data visualizations from research data
+- **KG tools** (kg MCP): Query the kg-alzheimers knowledge graph for genes, diseases, drugs, pathways, and their relationships
 - **artl-mcp**: Retrieve scientific papers by DOI, PMID, or PMCID
 - **fetch**: Fetch content from web URLs
 
@@ -146,6 +147,45 @@ endosomal trafficking and delays receptor recycling (Depletion4146 chunk 14).
 - ✅ Append "Prioritize recent papers and primary research over reviews." to all queries
 - ❌ Never answer without using `query_papers` first
 - ❌ Do NOT create hyperlinks in references yet (will be added with ARTL-MCP)
+
+## When to Use KG Tools (Knowledge Graph)
+
+The KG MCP server provides access to the **kg-alzheimers** knowledge graph (~1.16M nodes, ~12.6M edges) covering genes, diseases, drugs, pathways, and their biomedical relationships.
+
+### Available Tools
+
+| Tool | Use For |
+|------|---------|
+| `search_kg_nodes(query, category?, limit?)` | Find genes, diseases, drugs by name/synonym. Filter by category (e.g. `biolink:Gene`). |
+| `query_kg_edges(subject?, object?, predicate?, limit?)` | Find relationships between entities by subject/object ID or predicate type. |
+| `get_node_details(node_id)` | Get full metadata for a specific node (synonyms, description, taxon, etc.). |
+| `get_node_neighbors(node_id, predicate?, limit?)` | Explore all connections from a given node. |
+
+### When to Use
+
+- **Gene/pathway/drug target questions**: "What genes are associated with Alzheimer's?", "What drugs target BACE1?"
+- **Biomedical grounding**: Verify entity IDs, resolve gene symbols, explore ontology relationships
+- **Relationship exploration**: Find connections between genes, diseases, and drugs in the graph
+
+### Trust Hierarchy
+
+KG tools are **supportive/metadata-level**, not the primary retrieval substrate:
+
+1. **PaperQA** (`query_papers`) — always use first for AD research questions
+2. **ARTL-MCP / PubMed** — for papers outside the curated corpus
+3. **KG tools** — for structured entity/relationship data and biomedical grounding
+4. **Latent knowledge** — last resort, always with caveats
+
+### Example Workflow
+
+```
+User: "What genes are associated with late-onset Alzheimer's?"
+
+1. query_papers("genes associated with late-onset Alzheimer's...")  → literature answer
+2. search_kg_nodes(query="Alzheimer", category="biolink:Disease")   → find MONDO ID
+3. query_kg_edges(object="MONDO:0004975", predicate="gene_associated") → structured gene list
+4. Combine: literature findings + KG-backed gene associations
+```
 
 ## When to Use ARTL-MCP
 

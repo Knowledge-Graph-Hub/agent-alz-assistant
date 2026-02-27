@@ -17,6 +17,7 @@ dependencies = [
     "bcrypt>=4.0.0",
     "matplotlib>=3.7.0",
     "seaborn>=0.12.0",
+    "duckdb>=1.3.0",
 ]
 
 [build-system]
