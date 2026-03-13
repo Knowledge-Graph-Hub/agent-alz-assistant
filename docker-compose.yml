@@ -1,0 +1,31 @@
+# Docker Compose for agent-alz-assistant (local development)
+#
+# Usage:
+#   docker compose build
+#   docker compose up
+#
+# Secrets live in app.env (NOT .env) to prevent Docker Compose from
+# auto-interpolating bcrypt hashes and other $-containing values.
+# The app loads app.env via load_dotenv("app.env").
+
+services:
+  agent-alz-assistant:
+    build: .
+    ports:
+      - "8602:8602"
+    restart: unless-stopped
+    environment:
+      # Override paths for Docker container
+      PQA_HOME: /app/data/alz_papers_1k_text
+      KG_DATA_DIR: /app/data/kg
+    volumes:
+      - ./app.env:/app/app.env:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./static/plots:/app/static/plots
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8602/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

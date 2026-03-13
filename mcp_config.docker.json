@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "paperqa": {
+      "command": "python",
+      "args": [
+        "-m",
+        "agent_alz_assistant.mcp_server.paperqa_server"
+      ]
+    },
+    "artl-mcp": {
+      "command": "uvx",
+      "args": [
+        "artl-mcp"
+      ]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"]
+    },
+    "plotting": {
+      "command": "python",
+      "args": [
+        "-m",
+        "agent_alz_assistant.mcp_server.plotting_server"
+      ]
+    },
+    "kg": {
+      "command": "python",
+      "args": [
+        "-m",
+        "agent_alz_assistant.mcp_server.kg_server"
+      ]
+    }
+  }
+}

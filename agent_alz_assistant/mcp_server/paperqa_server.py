@@ -58,6 +58,7 @@ async def query_paperqa_corpus(query: str) -> dict:
     settings = Settings(paper_directory=str(home_path))
     settings.agent.index.name = index_path.name
     settings.agent.index.index_directory = str(index_path.parent)
+    settings.agent.rebuild_index = False  # Use pre-built index, never re-index
     
     # Load the index - NEVER build
     try:
