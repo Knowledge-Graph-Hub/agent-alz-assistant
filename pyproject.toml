@@ -14,6 +14,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "paper-qa>=5.0.0,<6",
     "paper-qa-pypdf>=5.0.0,<6",
+    "litellm>=1.74,<1.75",
     "mcp>=1.0.0",
     "bcrypt>=4.0.0",
     "matplotlib>=3.7.0",
