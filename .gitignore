@@ -36,6 +36,7 @@ ENV/
 # Environment
 .env
 .env.local
+app.env
 
 # MCP config with secrets
 mcp_config.json

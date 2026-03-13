@@ -19,7 +19,9 @@ from dotenv import load_dotenv
 from agent_alz_assistant.agent import ClaudeAgent
 
 # Load environment variables
-load_dotenv()
+# Use app.env (not .env) to avoid Docker Compose auto-interpolating
+# bcrypt hashes and other $-containing values
+load_dotenv("app.env")
 
 # Set up query logging (thread-safe)
 LOGS_DIR = Path("logs")
@@ -237,8 +239,9 @@ if __name__ in {"__main__", "__mp_main__"}:
 
     ui.run(
         title="agent-alz-assistant",
+        host="0.0.0.0",
         port=PORT,
         reload=False,
-        show=True,
+        show=False,
         storage_secret=STORAGE_SECRET,
     )
