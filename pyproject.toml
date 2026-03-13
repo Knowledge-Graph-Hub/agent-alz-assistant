@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 dependencies = [
     "nicegui>=3.4.0",  # CVE-2025-66645 fix
     "python-dotenv>=1.0.0",
-    "paper-qa>=5.0.0,<6",
+    "paper-qa[pypdf]>=5.0.0,<6",
     "mcp>=1.0.0",
     "bcrypt>=4.0.0",
     "matplotlib>=3.7.0",
