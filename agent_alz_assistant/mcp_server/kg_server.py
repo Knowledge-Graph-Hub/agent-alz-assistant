@@ -14,7 +14,11 @@ import os
 from pathlib import Path
 
 import duckdb
+from dotenv import load_dotenv
 from mcp.server import Server
+
+# Load app.env so MCP subprocesses get env vars when spawned by Claude CLI
+load_dotenv("app.env")
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
