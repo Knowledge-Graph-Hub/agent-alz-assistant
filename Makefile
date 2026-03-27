@@ -1,11 +1,12 @@
-.PHONY: start stop restart install test lint format clean deploy logs help
+.PHONY: start stop restart install test lint format clean deploy logs help \
+       docker-build docker-start docker-stop docker-logs
 
-# Read PORT from .env without using include (to avoid mangling APP_PASSWORD_HASH)
-PORT := $(shell grep '^PORT=' .env 2>/dev/null | cut -d '=' -f 2)
+# Read PORT from app.env (not .env — avoids Docker Compose $-interpolation issues)
+PORT := $(shell grep '^PORT=' app.env 2>/dev/null | cut -d '=' -f 2)
 
 # Deployment configuration
 DEPLOY_HOST ?= gassh
-DEPLOY_DIR ?= ~/agent-alz-assistant
+DEPLOY_DIR ?= ~/agent
 LOCAL_DATA_DIR ?= data
 
 help:
@@ -21,7 +22,13 @@ help:
 	@echo "  make lint     - Lint code"
 	@echo "  make format   - Format code"
 	@echo "  make clean    - Clean up temporary files"
-	@echo "  make deploy   - Deploy to production server (gassh)"
+	@echo "  make deploy   - Deploy to production server (gassh) via Docker"
+	@echo ""
+	@echo "Docker targets:"
+	@echo "  make docker-build - Build Docker image"
+	@echo "  make docker-start - Start with docker compose"
+	@echo "  make docker-stop  - Stop docker compose services"
+	@echo "  make docker-logs  - Tail docker compose logs"
 
 install:
 	uv sync
@@ -69,6 +76,19 @@ clean:
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 
+docker-build:
+	docker compose build
+
+docker-start:
+	@mkdir -p logs static/plots
+	docker compose up -d
+
+docker-stop:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f
+
 deploy:
 	@echo "========================================="
 	@echo "Deploying agent-alz-assistant to $(DEPLOY_HOST)"
@@ -84,7 +104,7 @@ deploy:
 	fi"
 	@echo ""
 	@echo "Step 2: Creating data directory on $(DEPLOY_HOST)..."
-	@ssh $(DEPLOY_HOST) "mkdir -p $(DEPLOY_DIR)/data"
+	@ssh $(DEPLOY_HOST) "mkdir -p $(DEPLOY_DIR)/data $(DEPLOY_DIR)/logs $(DEPLOY_DIR)/static/plots"
 	@echo ""
 	@echo "Step 3: Uploading paper corpus..."
 	@rsync -avz --progress $(LOCAL_DATA_DIR)/alz_papers_1k_text/ $(DEPLOY_HOST):$(DEPLOY_DIR)/data/alz_papers_1k_text/
@@ -92,25 +112,22 @@ deploy:
 	@echo "Step 4: Uploading PaperQA index..."
 	@rsync -avz --progress $(LOCAL_DATA_DIR)/pqa_index_*/ $(DEPLOY_HOST):$(DEPLOY_DIR)/data/pqa_index_*/
 	@echo ""
-	@echo "Step 5: Checking .env configuration on $(DEPLOY_HOST)..."
-	@ssh $(DEPLOY_HOST) "if [ ! -f $(DEPLOY_DIR)/.env ]; then \
-		echo 'WARNING: .env does not exist on server!'; \
+	@echo "Step 5: Checking app.env configuration on $(DEPLOY_HOST)..."
+	@ssh $(DEPLOY_HOST) "if [ ! -f $(DEPLOY_DIR)/app.env ]; then \
+		echo 'WARNING: app.env does not exist on server!'; \
 		echo 'You need to create it manually:'; \
 		echo '  1. ssh $(DEPLOY_HOST)'; \
-		echo '  2. cd $(DEPLOY_DIR) && cp .env.example .env'; \
-		echo '  3. Edit .env with production values (STORAGE_SECRET, APP_PASSWORD_HASH, etc.)'; \
-		echo 'Deployment will continue, but app will not start without .env'; \
+		echo '  2. cd $(DEPLOY_DIR) && cp app.env.example app.env'; \
+		echo '  3. Edit app.env with production values (STORAGE_SECRET, APP_PASSWORD_HASH, etc.)'; \
+		echo 'Deployment will continue, but app will not start without app.env'; \
 	else \
-		echo '.env already exists - preserving existing configuration'; \
+		echo 'app.env already exists - preserving existing configuration'; \
 	fi"
 	@echo ""
-	@echo "Step 6: Installing dependencies on $(DEPLOY_HOST)..."
-	@ssh $(DEPLOY_HOST) "cd $(DEPLOY_DIR) && ~/.local/bin/uv sync"
-	@echo ""
-	@echo "Step 7: Starting application on $(DEPLOY_HOST)..."
-	@ssh $(DEPLOY_HOST) "cd $(DEPLOY_DIR) && PATH=\$$HOME/.local/bin:\$$PATH make start"
+	@echo "Step 6: Building and starting Docker container on $(DEPLOY_HOST)..."
+	@ssh $(DEPLOY_HOST) "cd $(DEPLOY_DIR) && docker compose -f docker-compose.gassh.yml up -d --build"
 	@echo ""
 	@echo "========================================="
 	@echo "Deployment complete!"
-	@echo "Application should be running at http://agent.alzassistant.org"
+	@echo "Application should be running at https://agent.alzassistant.org"
 	@echo "========================================="

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
@@ -17,6 +18,9 @@ from paperqa import Settings
 from paperqa.agents.main import agent_query
 from paperqa.agents.search import get_directory_index
 
+
+# Load app.env so MCP subprocesses get PQA_INDEX, OPENAI_API_KEY, etc.
+load_dotenv("app.env")
 
 app = Server("paperqa-server")
 
@@ -58,6 +62,7 @@ async def query_paperqa_corpus(query: str) -> dict:
     settings = Settings(paper_directory=str(home_path))
     settings.agent.index.name = index_path.name
     settings.agent.index.index_directory = str(index_path.parent)
+    settings.agent.rebuild_index = False  # Use pre-built index, never re-index
     
     # Load the index - NEVER build
     try:

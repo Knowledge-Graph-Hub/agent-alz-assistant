@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+
+# Data and logs (mounted as volumes)
+data/
+logs/
+static/plots/
+
+# Git
+.git/
+.gitignore
+
+# Claude Code local settings
+.claude/
+
+# NiceGUI storage
+.nicegui/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (except what we need)
+notes/
+*.md
+!CLAUDE.md
+!README.md
+
+# Environment (mounted at runtime)
+.env
+.env.local
+.env.example
+app.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Word docs
+*.docx

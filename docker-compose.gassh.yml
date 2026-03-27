@@ -1,0 +1,30 @@
+# Docker Compose for agent-alz-assistant - gassh deployment
+# Configured for agent.alzassistant.org (port 8602)
+#
+# Usage:
+#   docker compose -f docker-compose.gassh.yml up -d --build
+#
+# Secrets live in app.env (NOT .env) to prevent Docker Compose from
+# auto-interpolating bcrypt hashes and other $-containing values.
+
+services:
+  agent-alz-assistant:
+    build: .
+    ports:
+      - "8602:8602"
+    restart: unless-stopped
+    environment:
+      PORT: 8602
+      PQA_HOME: /app/data/alz_papers_1k_text
+      KG_DATA_DIR: /app/data/kg
+    volumes:
+      - ./app.env:/app/app.env:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./static/plots:/app/static/plots
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8602/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
